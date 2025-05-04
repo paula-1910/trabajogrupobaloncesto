@@ -88,6 +88,43 @@ while tiempo_total_utilizado + TIEMPO_SESION <= TIEMPO_TOTAL:
     if not progreso:
         break  # No hay más mejoras posibles, se rompe para evitar bucle infinito
 
+# Asignación Dinámica (Extensión): 
+def asignacion_dinamica(jugadores, tiempo_total, tiempo_sesion, tiempo_max_jugador):
+    """
+    Distribuye el tiempo restante de manera óptima maximizando el total de habilidades,
+    considerando el tiempo disponible y las mejoras posibles.
+    """
+    tiempo_restante = tiempo_total - sum(j["tiempo_usado"] for j in jugadores)
+    sesiones_posibles = tiempo_restante // tiempo_sesion
+    plan_extra = []
+
+    for _ in range(sesiones_posibles):
+        mejor_ganancia = 0
+        mejor_jugador = None
+        mejor_area = None
+
+        for jugador in jugadores:
+            if jugador["tiempo_usado"] + tiempo_sesion > tiempo_max_jugador:
+                continue
+            for area in AREAS:
+                if jugador["habilidades"][area] < 5:
+                    ganancia = 5 - jugador["habilidades"][area]
+                    if ganancia > mejor_ganancia:
+                        mejor_ganancia = ganancia
+                        mejor_jugador = jugador
+                        mejor_area = area
+
+        if mejor_jugador and mejor_area:
+            mejor_jugador["habilidades"][mejor_area] += 1
+            mejor_jugador["tiempo_usado"] += tiempo_sesion
+            plan_extra.append((mejor_jugador["nombre"], mejor_area, tiempo_sesion))
+
+    return plan_extra
+
+# Aplicar asignación dinámica si queda tiempo
+plan_extra = asignacion_dinamica(jugadores, TIEMPO_TOTAL, TIEMPO_SESION, TIEMPO_MAX_JUGADOR)
+plan.extend(plan_extra)
+tiempo_total_utilizado = sum(j["tiempo_usado"] for j in jugadores)
 
 # Resultados
 print("\n--- PLAN DE ENTRENAMIENTO ---")
@@ -110,6 +147,21 @@ for jugador in jugadores:
     for area in AREAS:
         mejora = jugador["habilidades"][area] - jugador["habilidades_iniciales"][area]
         print(f"    {area}: +{mejora}")
+
+#Análisis de Eficiencia (Extensión): 
+print("\n--- ANÁLISIS DE EFICIENCIA ---")
+total_mejoras = 0
+total_tiempo = 0
+
+for jugador in jugadores:
+    mejoras = sum(jugador["habilidades"][area] - jugador["habilidades_iniciales"][area] for area in AREAS)
+    tiempo = jugador["tiempo_usado"]
+    eficiencia = mejoras / tiempo if tiempo else 0
+    print(f"{jugador['nombre']} - Mejoras: {mejoras}, Tiempo: {tiempo} min, Eficiencia: {eficiencia:.2f} mejoras/min")
+    total_mejoras += mejoras
+    total_tiempo += tiempo
+
+print(f"\nEFICIENCIA GLOBAL: {total_mejoras} mejoras totales en {total_tiempo} minutos → {total_mejoras/total_tiempo:.2f} mejoras/min")
 
 # Gráfico de radar
 labels = AREAS
